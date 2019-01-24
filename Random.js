@@ -23,9 +23,23 @@ Random.prototype.nextInt = function(bound){
 		return BitHelper.makeInt(this.nextByte(), this.nextByte(), this.nextByte(), this.nextByte());
 	}
 	const bits = BitHelper.getRequiredBits(bound - 1);
-	let result;
+	let safetyCounter = 0;
+	let result = 0;
 	do {
-		result = BitHelper.numberFromBooleans(this.nextBooleans(bits), bits, false);
+		result = 0;
+		const bools = this.nextBooleans(bits);
+		for (let index = 0; index < bits; index++){
+			if (bools[index]){
+				result += BitHelper.POWERS[index];
+			}
+		}
+		
+		// Prevent freezes with broken random number generators
+		safetyCounter++;
+		if (safetyCounter > 50) {
+			result -= bound;
+			break;
+		}
 	} while(result >= bound);
 	return result;
 };
