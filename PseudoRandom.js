@@ -1,6 +1,11 @@
-function PseudoRandom(seed1, seed2, seed3, seed4, seed5, seed6, seed7, seed8){
+function PseudoRandom(seed1, seed2, seed3, seed4, seed5, seed6, seed7, seed8, config){
+	this.config = config || this.LEGACY_CONFIG;
+	this.xorCounter = 0;
+	this.shiftCounter1 = 0;
 	this.replaceCounter = 0;
-	this.shiftCounter = 0;
+	this.shiftCounter2 = 0;
+	this.invertCounter = 0;
+	this.shiftAmount = 0;
 	this.data = new Array(256);
 	this.setIntAt(0, seed1);
 	this.setIntAt(32, seed2);
@@ -39,6 +44,14 @@ PseudoRandom.prototype.toString = function(){
 	return string + ']';
 };
 
+PseudoRandom.prototype.LEGACY_CONFIG = {
+	xorPeriod : 0,
+	shiftPeriod1 : 0,
+	replacePeriod : 29,
+	shiftPeriod2 : 0,
+	invertPeriod : 0
+};
+
 PseudoRandom.prototype.INDEX = 77;
 
 PseudoRandom.prototype.SHIFTER = 214;
@@ -48,11 +61,11 @@ PseudoRandom.prototype.HARD_MASK = PseudoRandom.prototype.parse('110100010100100
 PseudoRandom.prototype.next = function(){
 	const oldIndex = this.getIndex();
 	const result = this.data[oldIndex];
-	this.xor(oldIndex, this.HARD_MASK);
-	this.shift(this.getAt(this.SHIFTER) + 50);
-	this.replace(this.getIndex() + 69, result);
-	this.shift(this.getAt(this.getIndex() - 22) + this.shiftCounter++);
-	this.invert(this.getAt(this.getIndex() + 17));
+	this.xor(oldIndex);
+	this.shift1();
+	this.replace(result);
+	this.shift2();
+	this.invert();
 	this.setIndex(this.getAt(this.getIndex() - 96));
 	return result;
 };
@@ -116,7 +129,19 @@ PseudoRandom.prototype.setIndex = function(index){
 	this.setAt(this.INDEX, index);
 };
 
-PseudoRandom.prototype.xor = function(index, mask){
+PseudoRandom.prototype.xor = function(oldIndex){
+	if (this.xorCounter <= 0){
+		this.xorNow(oldIndex, this.HARD_MASK);
+		this.xorCounter = this.config.xorPeriod;
+	} else {
+		this.xorCounter--;
+		if (this.data[10]){
+			this.xorCounter--;
+		}
+	}
+};
+
+PseudoRandom.prototype.xorNow = function(index, mask){
 	let maskIndex = 0;
 	for(; maskIndex + index < 256; maskIndex++){
 		if(mask[maskIndex]){
@@ -130,43 +155,82 @@ PseudoRandom.prototype.xor = function(index, mask){
 	}
 };
 
-PseudoRandom.prototype.shift = function(direction){
+PseudoRandom.prototype.shift1 = function(){
+	if (this.shiftCounter1 <= 0){
+		this.shiftNow(this.getAt(this.SHIFTER) + 50);
+		this.shiftCounter1 = this.config.shiftPeriod1;
+	} else {
+		this.shiftCounter1--;
+		if (this.data[7]) {
+			this.shiftCounter1--;
+		}
+	}
+};
+
+PseudoRandom.prototype.shift2 = function(){
+	if (this.shiftCounter2 <= 0){
+		this.shiftNow(this.getAt(this.getIndex() - 22) + this.shiftAmount++);
+		this.shiftCounter2 = this.config.shiftPeriod2;
+	} else {
+		this.shiftCounter2--;
+		if (this.data[12]) {
+			this.shiftCounter2--;
+		}
+	}
+};
+
+PseudoRandom.prototype.shiftNow = function(direction){
 	const copy = this.data.slice(0, 256);
 	this.setAt(direction, copy);
 };
 
-PseudoRandom.prototype.replace = function(baseIndex, value){
-	if(this.replaceCounter <= 0){
-		const firstIndices = new Array(32);
-		for(let i = 0; i < 32; i++){
-			firstIndices[i] = this.getAt(baseIndex + i * 8);
-		}
-		const secondIndices = new Array(256);
-		for(let i = 0; i < 32; i++){
-			secondIndices[i * 8 + 0] = this.getAt(firstIndices[i] + 0);
-			secondIndices[i * 8 + 1] = this.getAt(firstIndices[i] + 23);
-			secondIndices[i * 8 + 2] = this.getAt(firstIndices[i] + 143);
-			secondIndices[i * 8 + 3] = this.getAt(firstIndices[i] + 12);
-			secondIndices[i * 8 + 4] = this.getAt(firstIndices[i] - 74);
-			secondIndices[i * 8 + 5] = this.getAt(firstIndices[i] - 213);
-			secondIndices[i * 8 + 6] = this.getAt(firstIndices[i] + 176);
-			secondIndices[i * 8 + 7] = this.getAt(firstIndices[i] + 58);
-		}
-		const copy = this.data.slice(0, 256);
-		for(let index = 0; index < 256; index++){
-			this.data[index] = copy[secondIndices[index]];
-		}
-		this.replaceCounter = 29;
-	}
-	else {
+PseudoRandom.prototype.replace = function(result){
+	if (this.replaceCounter <= 0){
+		this.replaceNow(this.getIndex() + 69, result);
+		this.replaceCounter = this.config.replacePeriod;
+	} else {
 		this.replaceCounter--;
-		if(value){
+		if (result) {
 			this.replaceCounter--;
 		}
 	}
 };
 
-PseudoRandom.prototype.invert = function(index){
+PseudoRandom.prototype.replaceNow = function(baseIndex, value){
+	const firstIndices = new Array(32);
+	for(let i = 0; i < 32; i++){
+		firstIndices[i] = this.getAt(baseIndex + i * 8);
+	}
+	const secondIndices = new Array(256);
+	for(let i = 0; i < 32; i++){
+		secondIndices[i * 8 + 0] = this.getAt(firstIndices[i] + 0);
+		secondIndices[i * 8 + 1] = this.getAt(firstIndices[i] + 23);
+		secondIndices[i * 8 + 2] = this.getAt(firstIndices[i] + 143);
+		secondIndices[i * 8 + 3] = this.getAt(firstIndices[i] + 12);
+		secondIndices[i * 8 + 4] = this.getAt(firstIndices[i] - 74);
+		secondIndices[i * 8 + 5] = this.getAt(firstIndices[i] - 213);
+		secondIndices[i * 8 + 6] = this.getAt(firstIndices[i] + 176);
+		secondIndices[i * 8 + 7] = this.getAt(firstIndices[i] + 58);
+	}
+	const copy = this.data.slice(0, 256);
+	for(let index = 0; index < 256; index++){
+		this.data[index] = copy[secondIndices[index]];
+	}
+};
+
+PseudoRandom.prototype.invert = function(){
+	if (this.invertCounter <= 0){
+		this.invertNow(this.getAt(this.getIndex() + 17));
+		this.invertCounter = this.config.invertPeriod;
+	} else {
+		this.invertCounter--;
+		if (this.data[3]) {
+			this.invertCounter--;
+		}
+	}
+};
+
+PseudoRandom.prototype.invertNow = function(index){
 	const bools = this.getAt(index, 15);
 	for(let i = 0; i < bools.length; i++){
 		bools[i] = !bools[i];
