@@ -18,6 +18,21 @@ Random.prototype.nextChar = function(){
 	return BitHelper.makeChar(this.nextByte(), this.nextByte());
 };
 
+Random.prototype.fastNextInt = function(bound){
+	const bits = BitHelper.getRequiredBits(bound - 1);
+	const bools = this.nextBooleans(bits);
+	let result = 0;
+	for (let index = 0; index < bits; index++){
+		if (bools[index]){
+			result += BitHelper.POWERS[index];
+		}
+	}
+	if (result >= bound){
+		result -= bound;
+	}
+	return result;
+};
+
 Random.prototype.nextInt = function(bound){
 	if(bound === undefined){
 		return BitHelper.makeInt(this.nextByte(), this.nextByte(), this.nextByte(), this.nextByte());
