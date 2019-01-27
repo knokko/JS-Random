@@ -19,6 +19,16 @@ function PseudoRandom(seed1, seed2, seed3, seed4, seed5, seed6, seed7, seed8, co
 
 extendProtoType(Random, PseudoRandom);
 
+PseudoRandom.prototype.clone = function(){
+	const clone = new PseudoRandom(this.getIntAt(0), this.getIntAt(32), this.getIntAt(64), this.getIntAt(96), this.getIntAt(128), this.getIntAt(160), this.getIntAt(192), this.getIntAt(224), this.config);
+	clone.xorCounter = this.xorCounter;
+	clone.shiftCounter1 = this.shiftCounter1;
+	clone.replaceCounter = this.replaceCounter;
+	clone.shiftCounter2 = this.shiftCounter2;
+	clone.invertCounter = this.invertCounter;
+	return clone;
+};
+
 PseudoRandom.prototype.parse = function(string){
 	const result = new Array(string.length);
 	for(let index = 0; index < string.length; index++){
@@ -75,6 +85,14 @@ PseudoRandom.prototype.setIntAt = function(index, value){
 	this.setAt(index + 8, BitHelper.byteToBooleans(BitHelper.int1(value)));
 	this.setAt(index + 16, BitHelper.byteToBooleans(BitHelper.int2(value)));
 	this.setAt(index + 24, BitHelper.byteToBooleans(BitHelper.int3(value)));
+};
+
+PseudoRandom.prototype.getIntAt = function(index, value){
+	const int0 = BitHelper.booleansToByte(this.getAt(index, 8));
+	const int1 = BitHelper.booleansToByte(this.getAt(index + 8, 8));
+	const int2 = BitHelper.booleansToByte(this.getAt(index + 16, 8));
+	const int3 = BitHelper.booleansToByte(this.getAt(index + 24, 8));
+	return BitHelper.makeInt(int0, int1, int2, int3);
 };
 
 PseudoRandom.prototype.setAt = function(index, value){

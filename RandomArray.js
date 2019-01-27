@@ -6,6 +6,18 @@ function RandomArray(sources){
 
 extendProtoType(Random, RandomArray);
 
+RandomArray.prototype.clone = function(){
+	const length = this.sources.length;
+	const sources = new Array(this.sources.length);
+	for (let index = 0; index < length; index++){
+		sources[index] = this.sources[index].clone();
+	}
+	const clone = new RandomArray(sources);
+	clone.index = this.index;
+	clone.counter = this.counter;
+	return clone;
+};
+
 RandomArray.prototype.next = function(){
 	const result = this.sources[this.index].next();
 	this.counter++;
