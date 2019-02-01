@@ -7,6 +7,14 @@ function PseudoRandom(seed1, seed2, seed3, seed4, seed5, seed6, seed7, seed8, co
 	this.invertCounter = 0;
 	this.shiftAmount = 0;
 	this.data = new Array(256);
+	if (seed1 === undefined) seed1 = BitHelper.javaIntCast(performance.now() * 357845 + 934348);
+	if (seed2 === undefined) seed2 = BitHelper.javaIntCast(performance.now() * 91823 - 28437);
+	if (seed3 === undefined) seed3 = BitHelper.javaIntCast(performance.now() * -1563982 + 765);
+	if (seed4 === undefined) seed4 = BitHelper.javaIntCast(performance.now() / 74 - 347);
+	if (seed5 === undefined) seed5 = BitHelper.javaIntCast(performance.now() * 37487 + 3948);
+	if (seed6 === undefined) seed6 = BitHelper.javaIntCast(performance.now() * -6294 - 95);
+	if (seed7 === undefined) seed7 = BitHelper.javaIntCast(performance.now() * -75289 + 934121);
+	if (seed8 === undefined) seed8 = BitHelper.javaIntCast(performance.now() * -3482378);
 	this.setIntAt(0, seed1);
 	this.setIntAt(32, seed2);
 	this.setIntAt(64, seed3);
