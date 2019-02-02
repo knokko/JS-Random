@@ -92,7 +92,7 @@ Random.prototype.nextChars = function(amount){
 };
 
 Random.prototype.nextInts = function(amount){
-	const result = new Array(amount);
+	const result = new Int32Array(amount);
 	for(let index = 0; index < amount; index++){
 		result[index] = this.nextInt();
 	}
